@@ -101,7 +101,6 @@ export default function ResumeGeneratorPage() {
     const validTypes = [
       "application/pdf",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/msword",
     ]
     const ext = file.name.split(".").pop().toLowerCase()
 
@@ -109,16 +108,16 @@ export default function ResumeGeneratorPage() {
       setStatusMsg({
         type: "error",
         title: "Unsupported File Format",
-        text: "Please upload a valid PDF or DOCX file (up to 5MB).",
+        text: "Please upload a valid PDF or DOCX file (up to 4MB).",
       })
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 4 * 1024 * 1024) {
       setStatusMsg({
         type: "error",
         title: "File Too Large",
-        text: "Maximum file size is 5MB. Please upload a smaller file.",
+        text: "Maximum file size is 4MB. Please upload a smaller file.",
       })
       return
     }
@@ -158,9 +157,7 @@ export default function ResumeGeneratorPage() {
     setStatusMsg(null)
 
     try {
-      const res = await api.post("/api/resume/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      })
+      const res = await api.post("/api/resume/upload", formData)
 
       if (res.data?.profile) {
         setProfile(res.data.profile)
@@ -418,7 +415,7 @@ export default function ResumeGeneratorPage() {
                 : "Drag & drop your resume here, or browse"}
             </h4>
             <p style={{ color: "#3D5A64", fontSize: "0.84rem" }}>
-              Supports PDF or DOCX documents (up to 5MB). AI extracts your experience, education, skills, and links.
+              Supports PDF or DOCX documents (up to 4MB). AI extracts your experience, education, skills, and links.
             </p>
           </div>
 

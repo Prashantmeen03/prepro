@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router"
 import { Button, Field, Icon, Logo, StateMessage } from "../components/ui"
 import { useAuth } from "../features/auth/hooks/useAuth"
@@ -6,7 +6,7 @@ import { useAuth } from "../features/auth/hooks/useAuth"
 export default function AuthPage({ initialMode = "login" }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { handleLogin, handleRegister, loading: authLoading } = useAuth()
+  const { user, handleLogin, handleRegister, authError, loading: authLoading } = useAuth()
 
   // Determine mode from prop or path
   const [mode, setMode] = useState(
@@ -19,11 +19,17 @@ export default function AuthPage({ initialMode = "login" }) {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (user && !authLoading) navigate("/", { replace: true })
+  }, [user, authLoading, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError("")
+    setNotice("")
 
     if (!email || !password || (!isLogin && !username)) {
       setError("Please fill in all required fields.")
@@ -35,7 +41,12 @@ export default function AuthPage({ initialMode = "login" }) {
       if (isLogin) {
         await handleLogin({ email, password })
       } else {
-        await handleRegister({ username, email, password })
+        const result = await handleRegister({ username, email, password })
+        if (result.requiresConfirmation) {
+          setNotice(result.message)
+          setMode("login")
+          return
+        }
       }
       navigate("/")
     } catch (err) {
@@ -92,6 +103,8 @@ export default function AuthPage({ initialMode = "login" }) {
           </div>
 
           {error && <StateMessage type="error" text={error} />}
+          {authError && !error && <StateMessage type="error" text={authError} />}
+          {notice && <StateMessage type="success" text={notice} />}
 
           <form onSubmit={handleSubmit}>
             {!isLogin && (
