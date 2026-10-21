@@ -154,6 +154,23 @@ YT1-P/
 
 ## 🔑 Environment Variables Reference
 
+### Netlify frontend deployment
+
+The root `netlify.toml` configures Netlify to install dependencies and run the
+Vite build in `Frontend/`, then publish `Frontend/dist`. It also serves
+`index.html` for application routes so opening or refreshing `/login`,
+`/register`, and dashboard links works with React Router.
+
+Set `VITE_API_URL` in Netlify to the HTTPS origin of the deployed Express API
+before deploying. Vite includes this setting at build time. Without it, the
+frontend defaults to `http://localhost:3000` for local development; that address
+cannot reach your server from a visitor's browser. The backend must also allow
+the frontend's HTTPS origin in its credentialed CORS configuration and use
+cookies appropriate for the deployment's domains.
+
+This configuration deploys the frontend only. `Backend/server.js` is a separate
+Express server and is not started by the static frontend deployment.
+
 | Variable | Description | Example |
 | :--- | :--- | :--- |
 | `PORT` | Port number for Express server | `3000` |
