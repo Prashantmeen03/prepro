@@ -14,7 +14,7 @@ export default function SettingsPage() {
     setChecking(true)
     setFeedback("")
     try {
-      const res = await api.get("/")
+      const res = await api.get("/api/health")
       if (res.data?.status === "online") {
         setApiStatus("online")
         setApiTimestamp(res.data.timestamp || new Date().toISOString())
@@ -25,7 +25,7 @@ export default function SettingsPage() {
       }
     } catch (err) {
       setApiStatus("offline")
-      setFeedback("Unable to reach backend server. Please verify the API is running on port 3000.")
+      setFeedback(err.response?.data?.message || "Unable to reach the backend. Please try again shortly.")
     } finally {
       setChecking(false)
     }
@@ -78,9 +78,9 @@ export default function SettingsPage() {
                 <Icon name={apiStatus === "online" ? "check" : "close"} size={18} />
               </div>
               <div>
-                <h3 style={{ fontSize: "1.1rem", color: "#10242B", margin: 0 }}>Express API Server</h3>
+                <h3 style={{ fontSize: "1.1rem", color: "#10242B", margin: 0 }}>Application API</h3>
                 <p style={{ fontSize: "0.82rem", color: "#3D5A64", margin: "0.2rem 0 0 0" }}>
-                  Endpoint: {import.meta.env.VITE_API_URL || "http://localhost:3000"}
+                  API and database connectivity
                 </p>
               </div>
             </div>
@@ -92,8 +92,8 @@ export default function SettingsPage() {
 
           <div style={{ background: "#F4FAF9", border: "1px solid rgba(16, 36, 43, 0.08)", padding: "1rem", borderRadius: "0.5rem", fontSize: "0.85rem", color: "#3D5A64" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-              <span>CORS Credential Support:</span>
-              <strong style={{ color: "#00796B" }}>Enabled (withCredentials: true)</strong>
+              <span>Application Data:</span>
+              <strong style={{ color: "#00796B" }}>Profiles and interview reports</strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
               <span>Gemini AI Engine:</span>
@@ -112,12 +112,11 @@ export default function SettingsPage() {
             Security & Authentication Storage
           </h3>
           <p style={{ fontSize: "0.86rem", color: "#3D5A64", lineHeight: 1.5, marginBottom: "1rem" }}>
-            Tokens are protected by HTTP-only and SameSite cookie policies to prevent cross-site scripting (XSS) leaks.
+            Your account uses managed authentication. Profiles and interview reports are accessible only after signing in.
           </p>
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <Badge tone="cyan">HTTP-Only Cookie</Badge>
-            <Badge tone="purple">SameSite=Lax</Badge>
-            <Badge tone="teal">Token Blacklist Active</Badge>
+            <Badge tone="cyan">Managed Authentication</Badge>
+            <Badge tone="teal">Private Profiles & Reports</Badge>
           </div>
         </Card>
       </div>

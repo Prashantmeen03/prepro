@@ -29,6 +29,10 @@ export default function CreateInterviewPage() {
         setError("Only PDF resume files are supported.")
         return
       }
+      if (selected.size > 4 * 1024 * 1024) {
+        setError("Resume files must be 4MB or smaller.")
+        return
+      }
       setFile(selected)
       setError("")
     }
@@ -40,6 +44,10 @@ export default function CreateInterviewPage() {
     if (dropped) {
       if (dropped.type !== "application/pdf" && !dropped.name.endsWith(".pdf")) {
         setError("Only PDF resume files are supported.")
+        return
+      }
+      if (dropped.size > 4 * 1024 * 1024) {
+        setError("Resume files must be 4MB or smaller.")
         return
       }
       setFile(dropped)
@@ -156,7 +164,7 @@ export default function CreateInterviewPage() {
               <h4 className="dropzone-box__title">
                 Click to browse or drag & drop your resume PDF
               </h4>
-              <p className="dropzone-box__sub">PDF only · Max 5MB</p>
+              <p className="dropzone-box__sub">PDF only · Max 4MB</p>
               <Badge tone="neutral">Standard ATS Parser</Badge>
             </div>
           ) : (
