@@ -20,10 +20,11 @@ app.use(cors({
         try {
             const parsedUrl = new URL(origin)
             const isNetlify = parsedUrl.hostname.endsWith(".netlify.app")
+            const isRender = parsedUrl.hostname.endsWith(".onrender.com")
             const isLocal = /^localhost(:\d+)?$/.test(parsedUrl.host) || /^127\.0\.0\.1(:\d+)?$/.test(parsedUrl.host)
             const isExplicitAllowed = allowedOrigins.includes(origin)
 
-            if (isNetlify || isLocal || isExplicitAllowed) {
+            if (isNetlify || isRender || isLocal || isExplicitAllowed) {
                 return callback(null, true)
             }
         } catch (e) {
