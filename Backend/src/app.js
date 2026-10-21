@@ -6,8 +6,21 @@ const app = express()
 
 app.use(express.json())
 app.use(cookieParser())
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://pre-interview-pratice.netlify.app",
+    process.env.FRONTEND_URL
+].filter(Boolean)
+
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true)
+        } else {
+            callback(new Error(`CORS blocked for origin: ${origin}`))
+        }
+    },
     credentials: true
 }))
 
