@@ -15,13 +15,26 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true)
-        } else {
-            callback(new Error(`CORS blocked for origin: ${origin}`))
+        if (!origin) return callback(null, true)
+
+        try {
+            const parsedUrl = new URL(origin)
+            const isNetlify = parsedUrl.hostname.endsWith(".netlify.app")
+            const isLocal = /^localhost(:\d+)?$/.test(parsedUrl.host) || /^127\.0\.0\.1(:\d+)?$/.test(parsedUrl.host)
+            const isExplicitAllowed = allowedOrigins.includes(origin)
+
+            if (isNetlify || isLocal || isExplicitAllowed) {
+                return callback(null, true)
+            }
+        } catch (e) {
+            // fallback
         }
+
+        callback(new Error(`CORS blocked for origin: ${origin}`))
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"]
 }))
 
 app.get("/", (req, res) => {
