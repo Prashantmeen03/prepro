@@ -1,204 +1,214 @@
 # 🚀 AI Interview Prep & Resume Generator
 
-An end-to-end, AI-powered interview preparation platform and ATS-tailored resume generator. Built with **React 19**, **Node.js & Express 5**, **MongoDB**, and **Google Gemini GenAI**.
-
-The platform analyzes a candidate's resume (PDF) and self-description against a target job description to generate custom interview strategies, mock questions with model answers, day-by-day roadmaps, skill gap assessments, and ATS-optimized downloadable PDF resumes.
-
----
+An AI-powered interview preparation and ATS-friendly resume platform. The project is split into a **React/Vite frontend** and a **Node.js/Express backend**, with **MongoDB** for persistence and **Google Gemini** for AI-generated preparation content.
 
 ## ✨ Features
 
-- **📄 Resume PDF Text Extraction**: Automatically parses uploaded `.pdf` resumes on the server using `pdf-parse`.
-- **🤖 Gemini AI Strategy Engine**:
-  - **Match Score**: Calculates candidate-job compatibility score (0–100%).
-  - **Technical Interview Questions**: Curated technical questions with interviewer intention and comprehensive model answers.
-  - **Behavioral Questions**: Tailored behavioral questions designed to demonstrate cultural fit and leadership.
-  - **Day-by-Day Preparation Roadmap**: Step-by-step daily study plans with actionable tasks.
-  - **Skill Gap Analysis**: Identifies missing competencies ranked by severity (`high`, `medium`, `low`).
-- **📥 ATS-Friendly Resume PDF Generator**: Generates an ATS-compliant, tailored HTML resume via Gemini and compiles it to a downloadable PDF via **Puppeteer**.
-- **🔐 Secure Authentication**:
-  - User registration and login using **bcryptjs** password hashing and **JWT** stored in HTTP-only cookies.
-  - Secure logout with database-backed token blacklisting.
-- **🎨 Modern Dark UI**: Sleek dark-mode interface designed with **SCSS** and **React 19**.
+- Account registration, login, and protected pages using JWT authentication.
+- Resume and job-description analysis with tailored interview strategies, questions, roadmaps, and skill-gap insights.
+- ATS-oriented resume generation and PDF downloads.
+- React UI with reusable components and SCSS styling.
 
----
+## 🏗️ Architecture
 
-## 🛠️ Tech Stack
+### System architecture
 
-### **Frontend**
-- **Library**: React 19
-- **Bundler**: Vite 7
-- **Routing**: React Router 7
-- **Styling**: SCSS (Dart Sass with `@use "sass:color"`)
-- **HTTP Client**: Axios (with credential support)
+This diagram shows the main runtime components and how requests move between them. The browser communicates with the Express API; the API uses MongoDB for persistent data and Gemini for AI generation. PDF parsing and rendering run in the backend.
 
-### **Backend**
-- **Runtime**: Node.js (v18+)
-- **Framework**: Express 5
-- **Database**: MongoDB (Mongoose 9 ODM)
-- **Authentication**: JWT (`jsonwebtoken`) & `bcryptjs`
-- **File Uploads**: Multer (in-memory buffer)
-- **PDF Extraction**: `pdf-parse`
-- **PDF Compilation**: Puppeteer
-- **AI / LLM**: `@google/genai` (Gemini Flash) with Zod structured output schema validation
+```mermaid
+flowchart LR
+    User[User] --> Browser[React 19 frontend<br/>Vite + React Router]
+    Browser -->|Axios /api requests<br/>credentials + bearer token| API[Express 5 backend]
+    API --> Auth[Authentication routes<br/>controllers + JWT middleware]
+    API --> Interviews[Interview and resume routes<br/>controllers + services]
+    Auth --> Mongo[(MongoDB<br/>users + token blacklist)]
+    Interviews --> MongoReports[(MongoDB<br/>interview reports + profiles)]
+    Interviews --> Gemini[Google Gemini API]
+    Interviews --> PDF[Resume/PDF processing<br/>pdf-parse + Puppeteer]
+```
 
----
+### Login and protected-page flow
 
-## 📂 Project Structure
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as AuthPage (React)
+    participant Auth as Auth hook/context
+    participant API as Express /api/auth
+    participant DB as MongoDB
+    participant Guard as Protected route
+
+    User->>UI: Submit email and password
+    UI->>Auth: handleLogin(credentials)
+    Auth->>API: POST /api/auth/login
+    API->>DB: Find user and verify password
+    DB-->>API: User record
+    API-->>Auth: User data + JWT; set HTTP-only cookie
+    Auth-->>UI: Set current user
+    UI->>Guard: Navigate to /
+    Guard-->>User: Render application when user is authenticated
+```
+
+On application startup, the auth hook requests `GET /api/auth/get-me` to restore the current session. A 404 usually means the frontend is reaching a host that does not serve the backend API; configure `VITE_API_URL` to the deployed backend origin and redeploy the frontend. A missing session can return an authorization response and should not be confused with a missing route.
+
+### Source code map
+
+```mermaid
+flowchart TB
+    subgraph Frontend[Frontend - React and Vite]
+        Entry[ src/main.jsx ] --> App[ src/App.jsx ]
+        App --> Routes[ src/app.routes.jsx ]
+        App --> Providers[Auth and interview context providers]
+        Routes --> Pages[ src/pages - screens ]
+        Routes --> Protected[features/auth/components/Protected.jsx]
+        Pages --> Hooks[features/*/hooks - feature logic]
+        Hooks --> Services[features/*/services - API calls]
+        Services --> Axios[src/services/api.js]
+        Pages --> UI[components - shared UI and layout]
+        UI --> Styles[style, styles, and SCSS files]
+    end
+    Axios -->|HTTP /api| Server[Backend/src/app.js]
+    subgraph Backend[Backend - Node.js and Express]
+        Server --> RoutesAPI[src/routes]
+        RoutesAPI --> Controllers[src/controllers]
+        Controllers --> Middleware[src/middlewares]
+        Controllers --> DomainServices[src/services - AI and PDF work]
+        Controllers --> Models[src/models]
+        Models --> DB[(MongoDB via Mongoose)]
+        Server --> Config[src/config - database configuration]
+        Bootstrap[server.js] --> Server
+    end
+```
+
+### Backend request path
+
+1. `Backend/server.js` loads environment variables, connects to MongoDB, and starts the Express server.
+2. `Backend/src/app.js` configures JSON parsing, cookies, CORS, the health endpoint, API routers, and error handling.
+3. Routers in `Backend/src/routes/` map API paths to controllers. Authentication routes are mounted at `/api/auth`, interview routes at `/api/interview`, and resume/profile routes at `/api/resume`.
+4. Controllers validate requests and coordinate middleware, Mongoose models, and backend services.
+5. Services perform operations such as Gemini generation and PDF work; models persist application data in MongoDB.
+
+### Frontend request path
+
+1. `Frontend/src/main.jsx` mounts the React application.
+2. `Frontend/src/App.jsx` provides auth/interview state and the router.
+3. `Frontend/src/app.routes.jsx` maps URLs to pages; protected application pages are wrapped by the auth guard.
+4. Pages and feature hooks call feature API modules under `src/features/**/services/`.
+5. Those API modules use the shared Axios client in `src/services/api.js`, which adds credentials and the saved bearer token when available.
+
+## 🧰 Technology stack
+
+| Area | Technologies |
+| --- | --- |
+| Frontend | React 19, Vite 7, React Router 7, Axios, Sass/SCSS |
+| Backend | Node.js, Express 5, Mongoose 9 |
+| Data | MongoDB |
+| Authentication | JWT, bcryptjs, HTTP-only cookies |
+| AI and documents | Google Gemini (`@google/genai`), `pdf-parse`, Puppeteer |
+
+## 📂 Repository layout
 
 ```text
-YT1-P/
+.
 ├── Backend/
+│   ├── server.js                 # Loads env, connects to DB, starts server
 │   ├── src/
-│   │   ├── config/
-│   │   │   └── database.js          # MongoDB connection handler
-│   │   ├── controllers/
-│   │   │   ├── auth.controller.js   # User registration, login, logout, getMe
-│   │   │   └── interview.controller.js # AI report & PDF resume controllers
-│   │   ├── middlewares/
-│   │   │   ├── auth.middleware.js   # JWT authentication & blacklist verification
-│   │   │   └── file.middleware.js   # Multer resume file upload handler
-│   │   ├── models/
-│   │   │   ├── user.model.js        # User schema
-│   │   │   ├── blacklist.model.js   # Token blacklist schema with TTL
-│   │   │   └── interviewReport.model.js # Stored interview reports schema
-│   │   ├── routes/
-│   │   │   ├── auth.routes.js       # /api/auth routes
-│   │   │   └── interview.routes.js  # /api/interview routes
-│   │   ├── services/
-│   │   │   └── ai.service.js        # Gemini AI generation & Puppeteer PDF rendering
-│   │   └── app.js                   # Express application setup, CORS, routes
-│   ├── .env                         # Environment variables (secret)
-│   ├── .env.example                 # Example environment variables template
-│   ├── package.json
-│   └── server.js                    # Server entry point
-│
+│   │   ├── app.js                # Express setup and router mounting
+│   │   ├── config/               # Database configuration
+│   │   ├── controllers/          # HTTP request handlers
+│   │   ├── middlewares/          # Auth, uploads, rate limits, etc.
+│   │   ├── models/               # Mongoose schemas
+│   │   ├── routes/               # Auth, interview, resume/profile routes
+│   │   └── services/             # AI and document processing
+│   └── tests/                    # Backend tests
 ├── Frontend/
 │   ├── src/
-│   │   ├── features/
-│   │   │   ├── auth/                # Auth context, hooks, pages (Login, Register)
-│   │   │   └── interview/           # Interview context, hooks, pages (Home, Interview)
-│   │   ├── style/                   # Reusable SCSS stylesheets
-│   │   ├── App.jsx                  # App root with context providers
-│   │   ├── app.routes.jsx           # React Router route definitions
-│   │   ├── main.jsx                 # Vite React entry point
-│   │   └── style.scss               # Global stylesheet
-│   ├── package.json
-│   └── vite.config.js
+│   │   ├── App.jsx               # Providers and router entry
+│   │   ├── app.routes.jsx        # Route definitions
+│   │   ├── components/          # Shared UI and layout
+│   │   ├── features/             # Auth and interview feature modules
+│   │   ├── pages/                # Page-level screens
+│   │   ├── services/api.js       # Shared Axios client
+│   │   └── styles/               # Application styles
+│   ├── .env.example              # Frontend API URL example
+│   └── vite.config.js            # Development server and API proxy
+├── netlify.toml                  # Netlify build/deploy configuration
 └── README.md
 ```
 
----
-
-## ⚙️ Getting Started
+## ⚙️ Getting started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (version 18 or higher)
-- [MongoDB Atlas](https://www.mongodb.com/atlas) account (or a local MongoDB instance)
-- [Google AI Studio](https://aistudio.google.com/) Gemini API Key
 
----
+- Node.js 18 or later
+- MongoDB connection string (local or hosted)
+- Google Gemini API key
 
-### 1. Backend Setup
+### 1. Configure and run the backend
 
-1. Open a terminal and navigate to the `Backend` directory:
-   ```bash
-   cd Backend
-   ```
+```bash
+cd Backend
+npm install
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+Create `Backend/.env` with the values for your environment:
 
-3. Configure your environment variables by creating or editing `.env`:
-   ```bash
-   cp .env.example .env
-   ```
+```env
+PORT=3000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=use_a_long_random_secret
+GOOGLE_GENAI_API_KEY=your_gemini_api_key
+FRONTEND_URL=http://localhost:5173
+```
 
-   Fill in the required keys in `Backend/.env`:
-   ```env
-   PORT=3000
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret_key
-   GOOGLE_GENAI_API_KEY=your_gemini_api_key
-   ```
+Start the backend:
 
-4. Start the backend development server:
-   ```bash
-   npm run dev
-   ```
-   *The backend will run at [http://localhost:3000](http://localhost:3000).*
+```bash
+npm run dev
+```
 
----
+The local API is available at `http://localhost:3000`.
 
-### 2. Frontend Setup
+### 2. Configure and run the frontend
 
-1. Open a separate terminal and navigate to the `Frontend` directory:
-   ```bash
-   cd Frontend
-   ```
+```bash
+cd Frontend
+npm install
+npm run dev
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+For local development, the Vite config proxies `/api` requests to `http://localhost:3000`. To use a different local backend, update the proxy target in `Frontend/vite.config.js`.
 
-3. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-   *The frontend will run at [http://localhost:5173](http://localhost:5173).*
+For deployment, set `VITE_API_URL` in the frontend host's environment settings to the **backend origin**, for example `https://your-backend.onrender.com` (no `/api` suffix), then rebuild and redeploy the frontend. See [`Frontend/API_CONFIGURATION.md`](Frontend/API_CONFIGURATION.md) for details.
 
----
+## 🔌 Main API routes
 
-## 🔑 Environment Variables Reference
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/auth/register` | Register an account |
+| `POST` | `/api/auth/login` | Authenticate and issue a session |
+| `GET` | `/api/auth/logout` | End the session |
+| `GET` | `/api/auth/get-me` | Get the current authenticated user |
+| `GET` / `POST` | `/api/interview/` | List or create interview reports |
+| `GET` | `/api/interview/report/:interviewId` | Fetch an interview report |
+| `POST` | `/api/interview/resume/pdf/:interviewReportId` | Generate/download a tailored PDF resume |
+| `...` | `/api/resume/*` | Resume/profile endpoints (see `Backend/src/routes/resumeProfile.routes.js`) |
 
-| Variable | Description | Example |
-| :--- | :--- | :--- |
-| `PORT` | Port number for Express server | `3000` |
-| `MONGO_URI` | MongoDB Atlas or local connection URI | `mongodb+srv://<user>:<pwd>@cluster.mongodb.net/yt-genai` |
-| `JWT_SECRET` | Secret key used to sign and verify JWTs | `super_secret_jwt_key_123` |
-| `GOOGLE_GENAI_API_KEY` | Google Gemini API key from Google AI Studio | `AIzaSy...` |
+## 🧪 Checks
 
----
+From `Frontend/`:
 
-## 📡 API Endpoints
+```bash
+npm run lint
+npm run build
+```
 
-### **Authentication (`/api/auth`)**
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :---: |
-| `POST` | `/api/auth/register` | Register a new user | ❌ |
-| `POST` | `/api/auth/login` | Login user & set auth cookie | ❌ |
-| `GET` | `/api/auth/logout` | Logout user & blacklist token | ❌ |
-| `GET` | `/api/auth/get-me` | Get current logged-in user profile | ✅ |
+From `Backend/`:
 
-### **Interview & Resume (`/api/interview`)**
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :---: |
-| `POST` | `/api/interview/` | Generate new interview report (multipart: `resume` file, `jobDescription`, `selfDescription`) | ✅ |
-| `GET` | `/api/interview/` | Get all interview reports for the authenticated user | ✅ |
-| `GET` | `/api/interview/report/:interviewId` | Fetch full report by ID | ✅ |
-| `POST` | `/api/interview/resume/pdf/:interviewReportId` | Generate & download tailored ATS PDF resume | ✅ |
-
----
-
-## 💡 How to Use
-
-1. **Register / Login**:
-   - Navigate to [http://localhost:5173/register](http://localhost:5173/register) and create an account.
-2. **Create an Interview Strategy**:
-   - On the Home page, paste the target Job Description.
-   - Upload your existing resume (PDF) or write a self-description.
-   - Click **"Generate My Interview Strategy"**.
-3. **Study & Prepare**:
-   - Access technical and behavioral interview questions with suggested answers.
-   - Follow the personalized preparation roadmap.
-   - Check your compatibility score and identify priority skill gaps.
-4. **Download Resume**:
-   - Click **"Download Resume"** in the interview view to download an ATS-tailored PDF resume.
-
----
+```bash
+npm test
+```
 
 ## 📄 License
-This project is licensed under the [ISC License](LICENSE).
+
+ISC. See the repository license file.
