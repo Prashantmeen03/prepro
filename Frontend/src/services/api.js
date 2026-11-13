@@ -1,6 +1,8 @@
 import axios from "axios"
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
+// Use the configured backend in deployed environments. Relative URLs work with
+// the Vite development proxy and same-origin production deployments.
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || ""
 
 export const api = axios.create({
     baseURL: API_BASE_URL,

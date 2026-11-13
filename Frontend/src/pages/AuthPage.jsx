@@ -37,9 +37,19 @@ export default function AuthPage({ initialMode = "login" }) {
       } else {
         await handleRegister({ username, email, password })
       }
+      setUsername("")
+      setEmail("")
+      setPassword("")
+      setShowPassword(false)
       navigate("/")
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Authentication failed.")
+      setError(
+        err?.response?.data?.message ||
+          (err?.request
+            ? "Unable to connect to the server. Please check your connection and try again."
+            : err?.message) ||
+          "Authentication failed."
+      )
     } finally {
       setLoading(false)
     }
